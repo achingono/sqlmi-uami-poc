@@ -27,12 +27,12 @@ provider "azurerm" {
 
 # 3. Create a resource group
 resource "azurerm_resource_group" "rg" {
-  name     = "sqlmi-uami-853c2f"
+  name     = "sqlmi-uami-rg"
   location = "Canada Central"
 }
 
 resource "azurerm_network_security_group" "nsg" {
-  name                = "mi-security-group"
+  name                = "sqlmi-uami-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
@@ -151,14 +151,14 @@ resource "azurerm_network_security_rule" "deny_all_outbound" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-mi"
+  name                = "sqlmi-uami-vnet"
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "subnet-mi"
+  name                 = "sqlmi-uami-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.0.0/24"]
@@ -179,7 +179,7 @@ resource "azurerm_subnet_network_security_group_association" "snet_nsg" {
 }
 
 resource "azurerm_route_table" "udr" {
-  name                          = "routetable-mi"
+  name                          = "sqlmi-uami-udr"
   location                      = azurerm_resource_group.rg.location
   resource_group_name           = azurerm_resource_group.rg.name
   disable_bgp_route_propagation = false
@@ -195,7 +195,7 @@ resource "azurerm_subnet_route_table_association" "uder_asso" {
 
 resource "azurerm_user_assigned_identity" "uami" {
   location            = azurerm_resource_group.rg.location
-  name                = "uami-for-sqlmi"
+  name                = "sqlmi-uami"
   resource_group_name = azurerm_resource_group.rg.name
 }
 
@@ -214,7 +214,7 @@ resource "azuread_app_role_assignment" "assign_aad_role" {
 
 # 4. Create a SQL Managed Instance the resource group
 resource "azurerm_mssql_managed_instance" "sqlmi" {
-  name                         = "sqlmi-uami-853c2f"
+  name                         = "sqlmi-uami-853c2f8a"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = azurerm_resource_group.rg.location
   administrator_login          = "mradministrator"
