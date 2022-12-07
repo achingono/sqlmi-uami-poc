@@ -48,6 +48,11 @@ jobs:
     - name: Terraform Format
       run: terraform fmt -check
 
+    - name: Azure Login
+      uses: Azure/login@v1.4.6
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
     # Generates an execution plan for Terraform
     - name: Terraform Plan
       run: terraform plan -input=false
