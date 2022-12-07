@@ -18,7 +18,11 @@ provider "azurerm" {
   # The features block allows changing the behaviour of the Azure Provider, more
   # information can be found here:
   # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/features-block
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 # 3. Create a resource group
@@ -174,11 +178,38 @@ resource "azurerm_subnet_network_security_group_association" "snet_nsg" {
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
+resource "azurerm_route_table" "udr" {
+  name                          = "routetable-mi"
+  location                      = azurerm_resource_group.rg.location
+  resource_group_name           = azurerm_resource_group.rg.name
+  disable_bgp_route_propagation = false
+  depends_on = [
+    azurerm_subnet.subnet,
+  ]
+}
+
+resource "azurerm_subnet_route_table_association" "uder_asso" {
+  subnet_id      = azurerm_subnet.subnet.id
+  route_table_id = azurerm_route_table.udr.id
+}
 
 resource "azurerm_user_assigned_identity" "uami" {
   location            = azurerm_resource_group.rg.location
   name                = "uami-for-sqlmi"
   resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Grant the User Managed Idenity Directory Read
+
+data "azuread_application_published_app_ids" "well_known" {}
+resource "azuread_service_principal" "msgraph" {
+  application_id = data.azuread_application_published_app_ids.well_known.result.MicrosoftGraph
+  use_existing   = true
+}
+resource "azuread_app_role_assignment" "assign_aad_role" {
+  app_role_id         = azuread_service_principal.msgraph.app_role_ids["User.Read.All"]
+  principal_object_id = azurerm_user_assigned_identity.uami.principal_id
+  resource_object_id  = azuread_service_principal.msgraph.object_id
 }
 
 # 4. Create a SQL Managed Instance the resource group
